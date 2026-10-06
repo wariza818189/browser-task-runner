@@ -6,17 +6,29 @@ a deterministic result, captures a PNG, and saves a structured JSON report.
 
 ## Setup
 
-Use the existing external virtual environment; do not create a repo-local `.venv`.
+Install Python 3.12+ and Git. Clone your copy of this repository, then create a
+virtual environment outside the checkout. The commands below use Bash on
+Linux/macOS; replace `<repository-url>` with the clone URL.
 
 ```bash
+git clone <repository-url> browser-task-runner
+cd browser-task-runner
+python3.12 -m venv ../browser-task-runner-venv
 source ../browser-task-runner-venv/bin/activate
 python --version
 python -m pip install -r requirements-dev.txt
 python -m playwright install chromium
 ```
 
+`requirements-dev.txt` includes the runtime dependencies and pytest. For runtime
+use only, install `requirements.txt` instead. Browser binaries are a separate,
+required installation. On supported Linux systems with missing browser libraries,
+run `python -m playwright install --with-deps chromium` (system package installation
+may require administrator privileges).
+
 Chromium also needs permission to launch subprocesses and its system dependencies.
-See the [official Playwright setup guide](https://playwright.dev/python/docs/library).
+See the official [Playwright setup guide](https://playwright.dev/python/docs/library)
+and [browser/system dependency instructions](https://playwright.dev/python/docs/browsers).
 The workflows require DNS and HTTPS access to `www.saucedemo.com` or
 `www.selenium.dev`, respectively.
 
@@ -92,9 +104,8 @@ Each run uses a fresh context. Locator waits and explicit timeouts replace sleep
 There are no retries to bypass access barriers. A changed login or inventory state
 fails clearly; maintain selectors in the workflow's `SELECTORS` mapping.
 
-Only the two fixed demo targets described above are supported. `smoke` and `demo`
-retain their existing behavior. No cart actions, checkout, purchases, account
-creation, CAPTCHA handling, third workflow, arbitrary URLs,
+Only the two fixed demo targets described above are supported. No cart actions,
+checkout, purchases, account creation, CAPTCHA handling, third workflow, arbitrary URLs,
 scheduling, databases, cloud services, or AI are implemented. Stop at unexpected
 access restrictions. See [WORKFLOW.md](WORKFLOW.md), [PROJECT_STATUS.md](PROJECT_STATUS.md),
 and [AGENTS.md](AGENTS.md).

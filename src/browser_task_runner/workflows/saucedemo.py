@@ -1,6 +1,5 @@
 """The fixed public Sauce Demo login workflow; ends at inventory."""
 from pathlib import Path
-from urllib.parse import urlsplit
 from playwright.sync_api import Error, Page, TimeoutError
 from browser_task_runner.extraction import extract_inventory
 from browser_task_runner.screenshots import capture_screenshot
@@ -28,8 +27,8 @@ def run_workflow(page: Page, run_dir: Path, steps: list[dict[str, str]],
             raise WorkflowFailure("navigation", "Could not navigate to the public Sauce Demo page") from None
         if response is None or not response.ok:
             raise WorkflowFailure("navigation", "Sauce Demo returned an unsuccessful HTTP response")
-        if urlsplit(page.url).hostname != "www.saucedemo.com":
-            raise WorkflowFailure("unexpected_page_state", "Unexpected redirect away from Sauce Demo")
+        if page.url != TARGET_URL:
+            raise WorkflowFailure("unexpected_page_state", "Unexpected redirect from the Sauce Demo login page")
 
     def login() -> None:
         try:

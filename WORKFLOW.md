@@ -6,7 +6,7 @@ Target: <https://www.saucedemo.com/>. The current milestone ends at inventory.
 
 1. Create isolated headless Chromium context, viewport 1280x720, locator timeout
    10 seconds, and navigation timeout 30 seconds.
-2. Navigate to the fixed public demo, rejecting failed HTTP responses and external redirects.
+2. Navigate to the exact fixed login URL, rejecting failed HTTP responses and redirects.
 3. Wait for the central `data-test` login locators, fill the site's published
    standard demo credentials, and submit the normal form.
 4. Verify the exact inventory URL, visible inventory list, and `Products` heading.
@@ -19,8 +19,7 @@ account creation, arbitrary site, or user-selected workflow is supported.
 
 ## Selenium public form submission (`form-demo`)
 
-The user explicitly authorized this second workflow on 2026-10-06, advancing the
-previous one-workflow scope in AGENTS.md. Exactly two workflows are supported.
+Exactly two fixed demo workflows are supported.
 Target: <https://www.selenium.dev/selenium/web/web-form.html>. The official source
 is [Selenium's test form](https://github.com/SeleniumHQ/selenium/blob/trunk/common/src/web/web-form.html).
 

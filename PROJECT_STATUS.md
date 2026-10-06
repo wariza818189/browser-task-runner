@@ -18,7 +18,7 @@ the real Chromium launch/close smoke test. Updated README and WORKFLOW scope.
 
 ## Validation and blockers
 
-Using external `../browser-task-runner-venv`, Python 3.12.3,
+Using an external virtual environment, Python 3.12.3,
 Playwright 1.63.0, pytest 9.1.1:
 
 - `python -m pip check`: passed, no broken requirements.
@@ -79,3 +79,67 @@ Validation with the existing external Python 3.12.3 environment:
 
 The new workflow's live success and screenshot remain unvalidated due to the
 above environment blockers. No commits or pushes were made.
+
+
+## Public portfolio review (2026-10-06)
+
+Verdict: **NEEDS CLEANUP**. Current checkout cleanup is complete, but historical
+local paths and blocked live validation remain release blockers.
+
+Necessary changes:
+
+- README now documents cloning, creating an external Python 3.12+ environment,
+  installing development/runtime requirements, Chromium binaries and Linux
+  system dependencies, all three commands, and the full suite.
+- Removed machine-specific paths from current documentation and aligned
+  contributor/workflow guidance with the existing two-workflow scope.
+- Added ignores for virtual environments and Python build/package output.
+- Require the exact Sauce Demo login URL before filling published demo
+  credentials; added three tests rejecting changed scheme, path, and query.
+
+Review findings:
+
+- Runtime/dev pins match the existing environment (Playwright 1.63.0 and pytest
+  9.1.1); both versions exist on public PyPI. No dependency changes needed.
+- pytest discovers tests from `tests`, imports from `src`, and registers the
+  network integration marker. Offline tests cover extraction, ordered steps,
+  controls, failure sanitization, dispatch, and reports. Real-browser tests cover
+  lifecycle and both successful workflows, including report and PNG checks.
+- CLI, browser lifecycle, workflows, extraction, screenshots, and atomic JSON
+  writing remain separate. Exactly two fixed public demos use normal interactions
+  with explicit timeouts and no retry/evasion logic.
+- Default run artifacts, caches, environment files, and virtual environments are
+  ignored. Custom artifact roots must remain outside tracked source. Failure
+  reports preserve completed evidence and sanitize raw browser diagnostics.
+
+Validation:
+
+- Existing external Python 3.12.3 environment: `python -m pip check` and imports
+  passed. Fresh external virtual environment creation passed; dependency install
+  failed with no matching distribution visible to pip. Direct local probes of
+  PyPI and both demo hosts failed DNS resolution (`gaierror`, errno -2), so clean
+  installation remains unverified in this execution environment.
+- Full `python -m pytest --tb=short`: **36 passed, 3 failed (39 total)**. The
+  Chromium smoke and both live integration tests fail at browser launch because
+  the sandbox denies a system call (`Operation not permitted`). No skips or
+  bypass flags were added.
+- Standalone `smoke`, `demo`, and `form-demo`: each exited 1 at Chromium launch.
+  Both demos wrote valid sanitized failure reports with empty steps/screenshots
+  and null results. Successful live results and screenshot capture remain
+  unverified; repeat installation, the full suite, and both demos in an
+  environment permitting Chromium and DNS/HTTPS before release.
+- `git diff --check`: passed. `git status --short`: reviewed; seven intended
+  source/test/documentation/ignore files modified, no generated files untracked.
+- Scanned all three commit snapshots and author/committer email metadata for
+  local paths, emails, recognizable secret signatures, credential assignments,
+  and generated/environment artifacts. All three commits contain local paths
+  in README, AGENTS, and PROJECT_STATUS. Editing the current files does not
+  remove these from history; sanitize release history before publication.
+  Commit emails use GitHub noreply addresses. No private keys, recognizable
+  access tokens, personal email addresses, or generated artifacts were detected.
+  The credential assignment is only the published Sauce Demo password.
+- `git fsck --full --no-reflogs`: passed; only a dangling empty tree was reported.
+  Ignore checks passed for run JSON/PNG, environment files, virtual environments,
+  and Python bytecode.
+
+No commits, pushes, history rewrites, or repository visibility changes were made.
