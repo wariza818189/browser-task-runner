@@ -1,1 +1,1 @@
-"""One fixed public Sauce Demo login workflow."""
+"""Exactly two fixed public demo workflows: login and form submission."""

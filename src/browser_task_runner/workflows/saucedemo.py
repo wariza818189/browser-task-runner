@@ -1,11 +1,10 @@
-"""The one fixed public Sauce Demo login workflow; ends at inventory."""
-from collections.abc import Callable
+"""The fixed public Sauce Demo login workflow; ends at inventory."""
 from pathlib import Path
-from typing import Any
 from urllib.parse import urlsplit
 from playwright.sync_api import Error, Page, TimeoutError
 from browser_task_runner.extraction import extract_inventory
 from browser_task_runner.screenshots import capture_screenshot
+from browser_task_runner.workflows.common import WorkflowFailure, run_step
 
 TARGET_URL = "https://www.saucedemo.com/"
 # Published on the demo login page; never accept arbitrary credentials or URLs.
@@ -20,25 +19,8 @@ SELECTORS = {
 }
 
 
-class WorkflowFailure(RuntimeError):
-    def __init__(self, kind: str, message: str):
-        super().__init__(message)
-        self.kind = kind
-
-
 def run_workflow(page: Page, run_dir: Path, steps: list[dict[str, str]],
                  screenshots: list[dict[str, str]]) -> dict[str, str]:
-    def step(name: str, action: Callable[[], Any]) -> Any:
-        record = {"name": name, "status": "running"}
-        steps.append(record)
-        try:
-            value = action()
-        except Exception:
-            record["status"] = "failed"
-            raise
-        record["status"] = "success"
-        return value
-
     def navigate() -> None:
         try:
             response = page.goto(TARGET_URL, wait_until="domcontentloaded")
@@ -82,8 +64,8 @@ def run_workflow(page: Page, run_dir: Path, steps: list[dict[str, str]],
         except (Error, ValueError):
             raise WorkflowFailure("unexpected_page_state", "Inventory result did not match the expected demo state") from None
 
-    step("navigate", navigate)
-    step("login", login)
-    step("verify_inventory", verify)
-    step("capture_inventory", screenshot)
-    return step("extract_inventory", extract)
+    run_step(steps, "navigate", navigate)
+    run_step(steps, "login", login)
+    run_step(steps, "verify_inventory", verify)
+    run_step(steps, "capture_inventory", screenshot)
+    return run_step(steps, "extract_inventory", extract)
