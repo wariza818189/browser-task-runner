@@ -63,3 +63,19 @@ def test_failure_stops_workflow(tmp_path, failure, kind):
     assert steps[-1]['status'] == 'failed'
     assert screenshots == []
     page.screenshot.assert_not_called()
+
+
+@pytest.mark.parametrize('url', [
+    'http://www.saucedemo.com/',
+    'https://www.saucedemo.com/unexpected',
+    'https://www.saucedemo.com/?unexpected=1',
+])
+def test_login_rejects_changed_target_before_filling(tmp_path, url):
+    page = page_mock()
+    page.url = url
+    steps = []
+    with pytest.raises(WorkflowFailure) as raised:
+        run_workflow(page, tmp_path, steps, [])
+    assert raised.value.kind == 'unexpected_page_state'
+    assert steps == [{'name': 'navigate', 'status': 'failed'}]
+    page.locator.assert_not_called()
