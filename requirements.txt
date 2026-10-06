@@ -1,0 +1,2 @@
+# Runtime dependency; browser binaries are installed separately.
+playwright==1.63.0
