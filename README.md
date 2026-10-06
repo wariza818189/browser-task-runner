@@ -1,16 +1,12 @@
 # Browser Task Runner
 
-A Python 3.12+ CLI portfolio project using Playwright and Chromium. Planned V1
-will run one deterministic demo workflow, capture screenshots, extract a result,
-and save a structured JSON run report.
-
-The foundation milestone implements only Chromium launch and clean shutdown.
-It does not visit a website, log in, interact with a page, or produce run reports.
+A Python 3.12+ CLI using synchronous Playwright and Chromium to run one fixed
+public Sauce Demo login workflow. It ends at the inventory page, captures a PNG,
+extracts the page title and inventory heading, and saves a structured JSON report.
 
 ## Setup
 
-Use the existing external virtual environment. Do not create a repository-local
-`.venv`. In this workspace:
+Use the existing external virtual environment; do not create a repo-local `.venv`.
 
 ```bash
 source ../browser-task-runner-venv/bin/activate
@@ -19,22 +15,38 @@ python -m pip install -r requirements-dev.txt
 python -m playwright install chromium
 ```
 
-Python must be 3.12 or newer. On another machine, activate your existing external
-environment instead. Chromium installation downloads the browser to Playwright's
-external cache; Linux may also need Playwright's documented system dependencies.
+Chromium also needs permission to launch subprocesses and its system dependencies.
 See the [official Playwright setup guide](https://playwright.dev/python/docs/library).
+The demo requires DNS and HTTPS access to `www.saucedemo.com`.
 
-## Run the foundation smoke command
+## Run
 
 From the repository root with the external environment active:
 
 ```bash
 PYTHONPATH=src python -m browser_task_runner smoke
+PYTHONPATH=src python -m browser_task_runner demo
 ```
 
-This launches headless Chromium and closes it immediately. Success exits with
-code 0; a Playwright launch or cleanup failure prints an error and exits with
-code 1. No URL, credentials, or browser interactions are accepted.
+`smoke` launches and closes Chromium without network access. `demo` uses only the
+standard public credentials published on the Sauce Demo login page, through its
+normal form. It accepts no alternate URL or credentials. It verifies the exact
+inventory URL, visible inventory list, and `Products` heading, then captures the
+inventory screenshot and extracts `Swag Labs` / `Products`.
+
+Each demo attempt writes `artifacts/runs/<run_id>/report.json`; successful runs also
+write `artifacts/runs/<run_id>/screenshots/inventory.png`. Optional
+`--artifacts-dir /path/to/local/runs` changes the output root. Screenshot paths in
+reports are relative to the report directory. Generated artifacts are ignored by
+Git; keep custom output directories outside tracked source.
+
+Exit 0 indicates success. Exit 1 indicates browser, navigation, selector, page
+state, artifact, or cleanup failure. Reports contain UTC timing, duration, ordered
+step outcomes, extracted result, screenshot references, and sanitized errors.
+Failures preserve completed steps and available screenshots, with a null result.
+A failure before browser startup has no steps or screenshots. If report writing
+fails, the CLI prints an error and exits 1. No credentials, cookies, or tokens are
+included in reports or CLI diagnostics.
 
 ## Verify
 
@@ -42,57 +54,34 @@ code 1. No URL, credentials, or browser interactions are accepted.
 python -m pip check
 PYTHONPATH=src python -c 'import browser_task_runner; import playwright.sync_api; import pytest'
 python -m pytest
+python -m pytest tests/test_workflow_unit.py tests/test_reports.py
+python -m pytest -m integration
 git diff --check
 git status --short
 ```
 
-The smoke test uses a real Chromium process and checks that it disconnects after
-cleanup. It needs installed browser binaries and permission to start subprocesses,
-but no website access. Missing browsers or failed launches fail the test rather
-than silently skipping it. pytest uses the `src` import path from `pytest.ini`.
-See [pytest configuration](https://docs.pytest.org/en/stable/reference/customize.html).
+The full suite includes offline extraction, report, orchestration, and failure
+checks, the existing real Chromium lifecycle smoke test, and one public demo
+integration test verifying the result, report, and PNG. Browser/network failures
+fail visibly instead of skipping. Offline tests need no browser or website.
 
-## Small V1 architecture
+## Architecture
 
 | Concern | Module | Responsibility |
 | --- | --- | --- |
-| CLI orchestration | `cli.py` | Parse arguments, coordinate a run, translate failures into exit codes. |
-| Browser lifecycle | `browser.py` | Own Playwright and Chromium; later own an isolated context and page with reliable cleanup. |
-| Workflow steps | `workflows/saucedemo.py` | Execute only the fixed demo sequence and expose step outcomes. |
-| Screenshot capture | `screenshots.py` | Save screenshots at named checkpoints and return artifact paths. |
-| Result extraction | `extraction.py` | Read and validate the workflow's final result without writing files. |
-| Report generation | `reports.py` | Serialize result, timings, steps, screenshots, and errors to JSON. |
+| CLI orchestration | `cli.py` | Run ID, timing, artifact paths, coordination, exit codes. |
+| Browser lifecycle | `browser.py` | Chromium, fresh fixed-viewport context, page, timeouts, cleanup. |
+| Workflow steps | `workflows/saucedemo.py` | Fixed login, central `data-test` selectors, inventory verification. |
+| Screenshot capture | `screenshots.py` | Explicit screenshot destination and capture. |
+| Result extraction | `extraction.py` | Read title/heading and validate plain values. |
+| Report generation | `reports.py` | Serialize plain data to JSON using a temporary file and replacement. |
 
-Use synchronous Playwright and ordinary functions. Pass pages, values, and output
-paths explicitly; avoid global browser state and unnecessary abstractions.
-Only the CLI and browser lifecycle are implemented in this milestone. The other
-modules reserve these concerns with docstrings, without executable workflows.
+Each run uses a fresh context. Locator waits and explicit timeouts replace sleeps.
+There are no retries to bypass access barriers. A changed login or inventory state
+fails clearly; maintain selectors in the workflow's `SELECTORS` mapping.
 
-```text
-src/browser_task_runner/
-  __init__.py
-  __main__.py
-  cli.py
-  browser.py
-  screenshots.py
-  extraction.py
-  reports.py
-  workflows/
-    __init__.py
-    saucedemo.py
-tests/
-  test_browser_smoke.py
-artifacts/screenshots/.gitkeep
-```
-
-## Planned demo and boundaries
-
-V1 will support only the fixed Sauce Demo workflow described in [WORKFLOW.md](WORKFLOW.md),
-targeting <https://www.saucedemo.com/>. General URL automation is out of scope.
-Automate only public/demo pages or pages the user is authorized to use. Never
-bypass authentication, CAPTCHAs, paywalls, anti-bot controls, or access restrictions.
-Stop and report an unexpected access barrier.
-
-No cloud deployment, databases, scheduling, or AI features. Generated artifacts
-stay local and untracked. See [PROJECT_STATUS.md](PROJECT_STATUS.md) for milestone
-progress and [AGENTS.md](AGENTS.md) for contributor rules.
+Only the public demo at <https://www.saucedemo.com/> is supported. No cart actions,
+checkout, purchases, account creation, CAPTCHA handling, alternate workflows,
+scheduling, databases, cloud services, or AI are implemented. Stop at unexpected
+access restrictions. See [WORKFLOW.md](WORKFLOW.md), [PROJECT_STATUS.md](PROJECT_STATUS.md),
+and [AGENTS.md](AGENTS.md).

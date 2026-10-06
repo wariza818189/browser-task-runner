@@ -1,58 +1,49 @@
 # Workflow scope
 
-## Foundation milestone: implemented scope
+## Implemented V1: one deterministic Sauce Demo login workflow
 
-1. Parse the CLI's `smoke` command.
-2. Start synchronous Playwright and launch headless Chromium.
-3. Close Chromium and stop Playwright, including cleanup when the caller fails.
-4. Return a success or failure exit code.
+Target: <https://www.saucedemo.com/>. The current milestone ends at inventory.
 
-No page is created and no network navigation, login, page interaction, screenshot,
-result extraction, or report generation happens in this milestone.
+1. Create isolated headless Chromium context, viewport 1280x720, locator timeout
+   10 seconds, and navigation timeout 30 seconds.
+2. Navigate to the fixed public demo, rejecting failed HTTP responses and external redirects.
+3. Wait for the central `data-test` login locators, fill the site's published
+   standard demo credentials, and submit the normal form.
+4. Verify the exact inventory URL, visible inventory list, and `Products` heading.
+5. Save `screenshots/inventory.png` within the run directory.
+6. Extract and validate page title `Swag Labs` and inventory heading `Products`.
+7. Close page, context, Chromium, and Playwright; save the final JSON report.
 
-## Planned V1: one deterministic Sauce Demo workflow
+The earlier cart plan is deferred. No cart interactions, checkout, purchase,
+account creation, alternate site, or user-selected workflow is supported.
 
-Target: <https://www.saucedemo.com/>. Implement this only in a later milestone.
+## Data flow and report
 
-1. Create an isolated browser context with a fixed viewport and explicit timeouts.
-2. Navigate to the demo and use its published standard demo credentials through
-   the normal login form. Do not bypass authentication or access controls.
-3. Wait for the inventory page and capture a named screenshot.
-4. Select the single fixed product `Sauce Labs Backpack` and add it to the cart.
-5. Open the cart, verify exactly that item, and capture a cart screenshot.
-6. Extract the cart item's name, displayed price/currency text, and quantity.
-7. Save a structured JSON report and close the page, context, and browser.
+The CLI owns run ID, UTC timestamps, elapsed duration, output paths, and exit code.
+Browser lifecycle owns cleanup. Workflow receives a page, output directory, and
+step/screenshot records. Screenshot and extraction helpers have explicit inputs.
+Report generation receives plain data and an output path, without browser access.
 
-End at the cart: no checkout or purchase. Use a fresh context for each run and
-stable locators with condition-based waits. Fail clearly if the demo changes.
-Do not support alternate websites, user-selected workflows, or arbitrary URLs in V1.
+Outputs: `artifacts/runs/<run_id>/report.json` and
+`artifacts/runs/<run_id>/screenshots/inventory.png` on successful runs.
 
-## Planned data flow and report
+Report fields:
 
-The CLI will own run ID, UTC start/end timestamps, elapsed duration, artifact paths,
-and the final exit code. The browser module owns resource cleanup. Workflow steps
-receive a page and call screenshot/extraction helpers; report generation receives
-plain data and an output path, with no browser access.
-
-Proposed local outputs: `artifacts/runs/<run_id>/report.json` and screenshots in
-that run's `screenshots/` directory. These paths are ignored by Git.
-
-Proposed report fields:
-
-- `schema_version`, `run_id`, `workflow`, and `target_url`.
-- `started_at`, `finished_at`, `duration_seconds`, and `status` (`success`/`failed`).
-- `steps`: ordered names and their completion/failure status.
-- `result`: item name, displayed price/currency text, and integer quantity; null on failure.
-- `screenshots`: named relative artifact paths.
+- `schema_version`, `run_id`, `workflow`, `target_url`.
+- `started_at`, `finished_at`, `duration_seconds`, `status` (`success`/`failed`).
+- `steps`: ordered names and completion/failure status.
+- `result`: `page_title` and `inventory_heading`; null on failure.
+- `screenshots`: named paths relative to the report directory.
 - `error`: sanitized failure type/message; null on success.
 
 On failure, preserve available evidence, attempt a failure report, and always
-clean up resources. Report-write failures must also produce a nonzero CLI exit.
-Never include credentials, cookies, or tokens in logs or reports.
+clean up resources. Browser-startup failures have empty step and screenshot lists.
+Report-write failures produce exit 1. Never include credentials, cookies, or tokens
+in logs or reports. A changed page or unexpected access barrier ends the run.
 
 ## Safety boundaries
 
-Use only public/demo pages or pages the user is authorized to use. Stop on an
-unexpected authentication requirement, CAPTCHA, paywall, anti-bot control, or
-access restriction. Do not bypass controls, evade detection, or retry to defeat
-them. Cloud deployment, databases, scheduling, and AI features are out of scope.
+Use only the fixed public demo through normal login. Never bypass authentication,
+CAPTCHAs, paywalls, anti-bot controls, or access restrictions. Do not evade detection
+or retry to defeat controls. Cloud services, databases, scheduling, and AI remain
+out of scope.

@@ -1,41 +1,41 @@
 # Project status
 
-## Foundation milestone
+## Deterministic login milestone
 
-Created project documentation, pinned runtime/development requirements, a `src`
-package with separate concern modules, pytest configuration, a CLI smoke command,
-and a real Chromium launch/close test. Existing screenshot artifact scaffolding is
-preserved. Python 3.12+ and the external virtual environment are required.
+Implemented the single fixed public Sauce Demo login workflow requested on
+2026-10-06. The user advanced the foundation milestone and narrowed the earlier
+cart plan to stop at inventory. No cart actions or additional workflows were added.
 
-Only browser lifecycle and smoke orchestration are implemented. Navigation,
-login, page interactions, screenshot capture, extraction, and structured run
-reports are planned for the next milestone, not implemented here.
+The CLI coordinates timing and reports; browser lifecycle owns isolated contexts
+and reliable cleanup; workflow, central selectors, screenshot capture, extraction,
+and JSON serialization remain separate. Inventory success requires the exact URL,
+visible inventory list, and Products heading. Reports preserve ordered steps and
+sanitized failures without credentials. Output artifacts are ignored by Git.
 
-## Validation
+Added offline validation, workflow ordering/failure, report round-trip, and CLI
+success/failure tests, plus one real public-demo browser integration test. Retained
+the real Chromium launch/close smoke test. Updated README and WORKFLOW scope.
 
-Validated on 2026-10-06 using `../browser-task-runner-venv` with Python
-3.12.3, Playwright 1.63.0, and pytest 9.1.1. Dependencies and Chromium binaries
-were already installed externally; no new environment or installation was needed.
+## Validation and blockers
 
-- `python -m pip check`: passed; no broken requirements.
-- Python version and package/dependency imports: passed.
-- `python -m pytest`: 1 passed using real Chromium outside the execution sandbox.
-- CLI `--help`: passed.
-- `git diff --check`: passed. Since the repository has only untracked files, an
-  additional whitespace scan covers those new project files.
-- `git status --short`: reviewed; foundation files remain untracked.
+Using external `../browser-task-runner-venv`, Python 3.12.3,
+Playwright 1.63.0, pytest 9.1.1:
 
-Environment limitation: the first sandboxed pytest run failed because a Chromium
-system call was denied (`Operation not permitted`). The approved rerun outside
-the execution sandbox passed without code changes. In a similarly restricted
-environment, browser launch requires an execution context that permits Chromium.
-There are no remaining blockers in the permitted context.
+- `python -m pip check`: passed, no broken requirements.
+- Package, Playwright, and pytest imports: passed.
+- `python -m pytest`: 14 passed, 2 failed. All offline tests passed. Both the
+  Chromium smoke test and demo integration test failed because the execution
+  sandbox denied a Chromium system call (`Operation not permitted`) at launch.
+- Standalone `python -m browser_task_runner demo`: attempted once, exited 1 at
+  Chromium launch; saved a structured failure report at
+  `artifacts/runs/20261006T064535-c7fb2207/report.json`. No screenshot was produced.
+- DNS probe to the target failed (`Could not resolve host`), so access to the
+  public demo must also be verified in a network-enabled execution context.
+- `git diff --check`: passed. `git status --short`: reviewed; existing code and
+  documentation are modified, with three new untracked test files. An additional
+  whitespace scan passed for source/documentation and untracked test files.
 
-## Next milestone
-
-Implement the single fixed Sauce Demo cart workflow from `WORKFLOW.md`, adding
-screenshot capture, pure result validation, and JSON report generation. Add
-focused extraction/report tests and browser workflow coverage as those behaviors
-are introduced. Keep the safety boundaries and small synchronous architecture.
-
-No commits or pushes have been made by this setup task.
+Live inventory verification and screenshot capture remain unvalidated due to
+these environment blockers. No skip or browser-evasion flags were added. A context
+that permits Chromium and demo DNS/HTTPS access is required to finish live validation.
+No dependencies installed, commits made, or pushes performed.

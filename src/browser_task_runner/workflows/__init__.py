@@ -1,1 +1,1 @@
-"""Fixed demo workflows; V1 will support Sauce Demo only."""
+"""One fixed public Sauce Demo login workflow."""
